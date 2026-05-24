@@ -18,7 +18,7 @@ to produce a per-checker trust ranking grounded in:
 - the rellm-tagged cogitator step table
   `_prime_homology_build/parsed_steps.csv`,
 - the Vietoris–Rips / persistent-homology pipeline (sections 4–10
-  of `prime_kernel_homology.ipynb`),
+  of [`docs/prime_kernel_homology.ipynb`](docs/prime_kernel_homology.ipynb)),
 - the 1-category consistency theorem in
   `LeanCat/CAT_statement/S_rellm_consistency.lean`.
 
@@ -44,7 +44,8 @@ cogitator-validator/
 │   └── cogitator-validator/
 │       └── SKILL.md          ← spec / decision tree / estimator routing
 ├── docs/
-│   ├── plan.md               ← implementation plan
+│   ├── plan.md                       ← implementation plan
+│   ├── prime_kernel_homology.ipynb   ← source pipeline (sections 1–10)
 │   ├── implementation-record.tex
 │   └── logo.svg
 ├── README.md                 ← this file

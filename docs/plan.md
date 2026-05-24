@@ -1,7 +1,8 @@
 # Plan for cogitator-validator
 
-A skill plugin that promotes the `prime_kernel_homology.ipynb`
-pipeline into a reusable decision process: given a Lean inductive
+A skill plugin that promotes the
+[`prime_kernel_homology.ipynb`](prime_kernel_homology.ipynb) pipeline
+into a reusable decision process: given a Lean inductive
 goal (`IsPrime n`, `fib k = n`, 1-category consistency), produce a
 ranking of the eleven kernel checkers backed by persistent homology
 of the rellm-tagged cogitator reasoning steps.
@@ -172,7 +173,7 @@ whose Lean proof is `by decide`. The signal-flow graph and the
   audited boundary" philosophy.
 - `kims-skill.md` — sibling skill template (Zstd spec pattern).
   This plan is structured along the same lines.
-- `prime_kernel_homology.ipynb` — the implementation source.
+- [`prime_kernel_homology.ipynb`](prime_kernel_homology.ipynb) — the implementation source (vendored in this repo).
 - `S_rellm_consistency.lean` — the 1-category precondition.
 - `betti_qiskit.py` — the estimator library.
 - `docs/implementation-record.tex` — LaTeX record of the prior session.
