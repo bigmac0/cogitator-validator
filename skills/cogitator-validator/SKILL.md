@@ -208,6 +208,159 @@ with `temperature` taken from the PID history file
 `_prime_homology_build/pid_trajectory.json` (last value, capped at
 T_HI=1.5), then re-enters at Q4.
 
+## Sub-Questions, Goals, and How Lean Solves Them
+
+The pregroup tree above is not metaphor — it is exactly the shape of
+the data flow between a Lean goal and the cogitator's sub-questions.
+This section makes that correspondence explicit.
+
+### The Lean side: a goal is a typing context with an open hole
+
+When you write `example : IsPrime 5 := by ...`, Lean records a
+*goal*:
+
+```
+⊢ IsPrime 5
+```
+
+The turnstile (`⊢`) is the *typing judgement*; everything left of
+it is the local context, everything right of it is the *type to
+inhabit*. Each tactic is a function from goals to goals — it
+either closes the goal (returns `[]`) or refines it into one or
+more sub-goals.
+
+For `IsPrime 5` written as `by decide`, the chain Lean walks is:
+
+```
+⊢ IsPrime 5
+   │  unfold Decidable instance for IsPrime
+   ▼
+⊢ decide (IsPrime 5) = true
+   │  reduce decide via Decidable.decide
+   ▼
+⊢ (∀ d : Fin 5, 2 ≤ d.val → 5 % d.val ≠ 0) = true
+   │  unfold Fin quantifier into finite case split
+   ▼
+⊢ 5 % 2 ≠ 0 ∧ 5 % 3 ≠ 0 ∧ 5 % 4 ≠ 0 = true
+   │  evaluate Nat.mod kernel-side
+   ▼
+⊢ true = true
+   │  rfl
+   ▼
+[] (closed)
+```
+
+Each arrow is a *single rewrite step* the kernel performs. Each
+intermediate goal is a complete typing context — a candidate type
+that must be inhabited for the proof to type-check.
+
+### The cogitator side: sub-questions are left adjoints of the goal
+
+`LeastToMost.decompose(question)` returns a list of strings; the
+skill treats those as left-adjoint types `gᴸ`. Each subq is a
+*question whose answer is required* for the original goal to be
+inhabited. `LeastToMost.solve(question, subqs)` then walks the
+list, building `(subq, answer)` pairs — the answer is the right
+adjoint `gᴿ`.
+
+The correspondence is term-by-term:
+
+| Lean goal step           | Cogitator subq / answer                  | Pregroup type |
+|--------------------------|-------------------------------------------|---------------|
+| `⊢ IsPrime n`            | "What is the definition of `IsPrime`?"    | `gᴸ` |
+| unfold `Decidable`       | "What does `decide` reduce `IsPrime n` to?" | `gᴸ` |
+| `decide ... = true`      | "How does the `Decidable` instance work?" | `gᴸ` |
+| evaluate `Nat.mod`       | "How does `Nat.mod` work in Lean?"        | `gᴸ` |
+| close with `rfl`         | "Why is `n % d ≠ 0` for each `d`?"        | `gᴿ` |
+| `[]` (proof closed)      | (verbal synthesis)                        | `1` |
+
+So a "correct" cogitator transcript is one whose subq + answer
+sequence, read left-to-right, *traces the same series of typing
+contexts the Lean kernel walks*. When that happens, the pregroup
+contraction `gᴸ g gᴿ → 1` succeeds and the validator emits
+`trust`.
+
+### How Lean closes the goal in our pipeline
+
+There are three tactics the skill currently understands as
+acceptable terminators, mirrored in the `tag` column of
+`parsed_steps.csv`:
+
+| Terminator | Tag we expect | What Lean does                                  |
+|-----------|----------------|--------------------------------------------------|
+| `rfl`     | `close rfl`    | unify both sides up to definitional equality     |
+| `decide`  | `invoke the`   | run the `Decidable` instance kernel-side         |
+| `simp`/`norm_num` | `reduce the` / `evaluate the` | rewrite by hypotheses |
+
+Any cogitator answer whose `verb` ∈ {`reduce`, `evaluate`,
+`invoke`, `apply`, `unfold`, `close`, `rewrite`, `conclude`} is a
+valid leaf of the pregroup tree. The rellm regex
+`(reduce|evaluate|check|invoke|conclude|unfold|apply|rewrite) ARG`
+is exactly the lexical-category assignment that gates this.
+
+### Example: real parsed induction steps from `parsed_steps.csv`
+
+These three rows are unmodified output from the notebook's
+section 4 cogitator + rellm pass; they show the same goal
+(`IsPrime n`) decomposed by three different checkers.
+
+```
+checker     test     step  subq                                                  answer                                                                  tag           verb     arg
+─────────── ──────── ──── ────────────────────────────────────────────────────  ──────────────────────────────────────────────────────────────────────  ──────────── ──────── ─────
+lean4lean   prime-5  0    What is the definition of IsPrime?                    A function that checks if a given number is prime ...                   apply a       apply    a
+lean4lean   prime-5  1    What does decide reduce the proposition IsPrime n to? It reduces ... checks if n is divisible by any number from 2 to sqrt(n) reduce the    reduce   the
+lean4lean   prime-5  2    How does the Decidable instance work?                 The Decidable instance uses a loop that iterates from 2 to sqrt(n) ...  invoke the    invoke   the
+lean4lean   prime-5  3    What are the properties of Nat.mod that need ...?     Nat.mod needs to evaluate whether the modulus is non-negative ...       reduce the    reduce   the
+
+nanoda      prime-3  0    What is the definition of IsPrime?                    A function that checks if a given number is prime or not ...            apply a       apply    a
+nanoda      prime-3  1    How does decide reduce the proposition IsPrime n?     It uses trial division with all numbers from 2 up to the square root .. apply the     apply    the
+nanoda      prime-3  2    What is the Decidable instance for IsPrime?           A propositional formula that can be reduced to IsPrime(n) is ¬(...)     reduce to     reduce   to
+nanoda      prime-3  3    How does Nat.mod work in Lean?                        Nat.mod n m = (n - m) % m                                               apply to      apply    to
+```
+
+Reading column-by-column: the subq column is `gᴸ`, the answer is
+`gᴿ`, and the (verb, arg) pair is the lexical category. The
+sequence `apply a · reduce the · invoke the · reduce the` is one
+admissible parse; the validator checks that *some such parse*
+reaches a terminator that matches a real Lean tactic.
+
+For the Fibonacci-induction half of the notebook (section 8), the
+parse is more explicit because each step has a closed-form Lean
+counterpart:
+
+```
+goal: fib 4 = 3
+  step: apply fib_add_two to fib 4         →   fib 3 + fib 2 = 3
+  step: apply fib_add_two to fib 3         →  (fib 2 + fib 1) + fib 2 = 3
+  step: substitute base values fib 1 = 1,
+        fib 0 = 0                          →  ((1 + 0) + 1) + (1 + 0) = 3
+  step: evaluate arithmetic on Nat         →   3 = 3
+  base: close by rfl                       →   []
+```
+
+Read as a pregroup string:
+`(goal · stepᴿ · stepᴿ · stepᴿ · stepᴿ · baseᴿ) → 1`. The regex
+`^(step\s)+base$` in section 8 of the notebook is exactly the
+*acceptance condition* of this pregroup grammar: any prefix of
+`step`'s followed by a single `base` reduces to the unit, and
+nothing else does.
+
+The skill's job is to compare a candidate cogitator transcript
+against this grammar:
+
+1. Tag every answer with its verb (using the rellm regex).
+2. Concatenate the verbs into a string.
+3. Check whether the resulting string is in the language
+   `(step | unfold | apply | reduce | evaluate)* (close | rfl)`.
+4. If yes → the transcript is a syntactically valid Lean proof
+   trace; the checker producing it earns its score component.
+5. If no → record the missing terminator and downgrade the score.
+
+This is the operational meaning of "validate the usefulness of a
+checker for proving the theorem of semantic 1-categories" — the
+checker is *useful* exactly when its cogitator transcript
+*parses* under the pregroup grammar above.
+
 ## How to use this skill
 
 Invoke when a user asks any of:

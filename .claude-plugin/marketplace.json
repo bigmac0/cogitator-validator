@@ -1,5 +1,6 @@
 {
   "name": "cogitator-validator",
+  "description": "A single-plugin marketplace publishing the cogitator-validator skill: a pregroup-grammar decision tree that scores eleven Lean kernel checkers using persistent homology of rellm-tagged cogitator reasoning steps, with classical and QPE Betti estimators.",
   "owner": {
     "name": "Ivan Rojas"
   },
