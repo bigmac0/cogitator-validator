@@ -53,7 +53,7 @@ cogitator-validator/
 
 ## Author
 
-Ivan Rojas (rojas.emilyc@gmail.com)
+Ivan Rojas (impetus1@gmx.com)
 
 ## License
 
