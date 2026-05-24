@@ -1,0 +1,13 @@
+{
+  "name": "cogitator-validator",
+  "owner": {
+    "name": "Ivan Rojas"
+  },
+  "plugins": [
+    {
+      "name": "cogitator-validator",
+      "source": "./",
+      "description": "Validate Lean checker outputs against a topological model of cogitator reasoning steps. Provides decision-tree suggestions, signal-flow diagnostics, and a QPE-based Betti estimator for higher-dimensional reasoning point clouds."
+    }
+  ]
+}

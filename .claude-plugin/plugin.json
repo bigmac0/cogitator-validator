@@ -1,0 +1,20 @@
+{
+  "name": "cogitator-validator",
+  "description": "Decision-tree skill for validating Lean kernel checkers via persistent homology of cogitator reasoning steps. Backs an 11-checker × N-prime grid with VR/PH topology and a QPE Betti estimator.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ivan Rojas"
+  },
+  "homepage": "https://github.com/bigmac0/cogitator-validator",
+  "repository": "https://github.com/bigmac0/cogitator-validator",
+  "license": "MIT",
+  "keywords": [
+    "lean4",
+    "category-theory",
+    "persistent-homology",
+    "qiskit",
+    "pregroup-grammar",
+    "checker-validation",
+    "1-category"
+  ]
+}
